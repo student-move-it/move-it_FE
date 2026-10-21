@@ -1,7 +1,7 @@
 import "./styles.css";
 import React, { useEffect, useRef, useState } from "react";
 import Header from "./components/Header";
-import Dashboard from "./components/DashBoard";
+import Dashboard from "./components/Dashboard";
 import { fetchClasses, fetchDashboard, getRequestError } from "./api";
 import { API_BASE_URL, REFRESH_INTERVAL_MS } from "./config";
 import type { ClassSnapshot, Period, RegisteredClass } from "./types";
