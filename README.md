@@ -1,3 +1,5 @@
+> 현재 화면은 /class/{classNumber} 전용 주소로 접속합니다. 아래의 반 선택·저장 설명은 이전 동작입니다. 현재 실행·배포 방법은 [DEPLOYMENT.md](./DEPLOYMENT.md)를 확인하세요.
+
 # 반 목록에서 선택하는 React + TypeScript 화면
 
 ## 실행
