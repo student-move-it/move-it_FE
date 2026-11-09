@@ -1,5 +1,10 @@
 import "./styles.css";
-import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Header from "./components/Header";
 import Dashboard from "./components/Dashboard";
 import { fetchClasses, fetchDashboard, getRequestError } from "./api";
@@ -7,7 +12,10 @@ import { API_BASE_URL, REFRESH_INTERVAL_MS } from "./config";
 import { parseClassRoute, subscribeToPath, currentPath } from "./routing";
 import type { ClassSnapshot, Period, RegisteredClass } from "./types";
 
-interface PageProps { apiBaseUrl?: string; refreshIntervalMs?: number; }
+interface PageProps {
+  apiBaseUrl?: string;
+  refreshIntervalMs?: number;
+}
 interface ClassListState {
   key: string;
   classroom: RegisteredClass | null;
@@ -15,17 +23,19 @@ interface ClassListState {
   missing: boolean;
   error: string | null;
 }
-interface ViewState { key: string; snapshot: ClassSnapshot | null; error: string | null; }
-export const normalizeBaseUrl = (value: string): string => value.trim().replace(/\/+$/, "");
+interface ViewState {
+  key: string;
+  snapshot: ClassSnapshot | null;
+  error: string | null;
+}
+export const normalizeBaseUrl = (value: string): string =>
+  value.trim().replace(/\/+$/, "");
 
 // 서버가 준 이동 범위를 교시별로 펼치되 현재 교시보다 이전 교시는 제외합니다.
 // 현재 API에는 아직 이동을 시작하지 않은 학생의 예약 목록이 포함되지 않습니다.
 export const buildPeriods = (snapshot: ClassSnapshot): Period[] => {
   const current = /^(\d+)교시$/.exec(snapshot.period.currentPeriod.trim());
-  // 쉬는시간 등에는 서버가 현재 이동 목록을 비워서 반환합니다.
-  // 다음 교시 정보 없이 임의의 교시 번호를 생성하지 않습니다.
-  if (!current) return [];
-  const currentNumber = Number(current[1]);
+  const currentNumber = current ? Number(current[1]) : null;
   const groups = new Map<number, Period>();
   for (const movement of snapshot.movements.movedStudents) {
     const identity = /^(\d+)\s+(.+)$/.exec(movement.name.trim());
@@ -35,7 +45,10 @@ export const buildPeriods = (snapshot: ClassSnapshot): Period[] => {
       room: movement.place,
     };
     for (
-      let number = Math.max(currentNumber, movement.startPeriod);
+      let number = Math.max(
+        currentNumber ?? movement.startPeriod,
+        movement.startPeriod,
+      );
       number <= movement.endPeriod;
       number++
     ) {
@@ -76,74 +89,125 @@ export const buildPeriods = (snapshot: ClassSnapshot): Period[] => {
     });
 };
 
-
-const Page = ({ apiBaseUrl = API_BASE_URL, refreshIntervalMs = REFRESH_INTERVAL_MS }: PageProps) => {
-  const pathname = useSyncExternalStore(subscribeToPath, currentPath, () => "/");
+const Page = ({
+  apiBaseUrl = API_BASE_URL,
+  refreshIntervalMs = REFRESH_INTERVAL_MS,
+}: PageProps) => {
+  const pathname = useSyncExternalStore(
+    subscribeToPath,
+    currentPath,
+    () => "/",
+  );
   const route = parseClassRoute(pathname);
   const requested = route.kind === "class" ? route.classNumber : null;
   const base = normalizeBaseUrl(apiBaseUrl);
   const key = JSON.stringify([base, pathname, requested]);
   const [retry, setRetry] = useState(0);
-  const [list, setList] = useState<ClassListState>({key: "", classroom: null, loaded: false, missing: false, error: null});
-  const [view, setView] = useState<ViewState>({key: "", snapshot: null, error: null});
+  const [list, setList] = useState<ClassListState>({
+    key: "",
+    classroom: null,
+    loaded: false,
+    missing: false,
+    error: null,
+  });
+  const [view, setView] = useState<ViewState>({
+    key: "",
+    snapshot: null,
+    error: null,
+  });
   const activeRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
     let disposed = false;
     const request = new AbortController();
     activeRequest.current?.abort();
-    setList({key, classroom: null, loaded: false, missing: false, error: null});
-    setView({key: "", snapshot: null, error: null});
+    setList({
+      key,
+      classroom: null,
+      loaded: false,
+      missing: false,
+      error: null,
+    });
+    setView({ key: "", snapshot: null, error: null });
     if (requested === null) return () => request.abort();
     const load = async () => {
       try {
         const classes = await fetchClasses(base, request.signal);
         if (disposed || request.signal.aborted) return;
-        const classroom = classes.find((item) => item.classNumber === requested) ?? null;
-        setList({key, classroom, loaded: true, missing: classroom === null, error: null});
+        const classroom =
+          classes.find((item) => item.classNumber === requested) ?? null;
+        setList({
+          key,
+          classroom,
+          loaded: true,
+          missing: classroom === null,
+          error: null,
+        });
       } catch (error) {
         if (!disposed && !request.signal.aborted)
-          setList({key, classroom: null, loaded: true, missing: false, error: getRequestError(error)});
+          setList({
+            key,
+            classroom: null,
+            loaded: true,
+            missing: false,
+            error: getRequestError(error),
+          });
       }
     };
     void load();
-    return () => { disposed = true; request.abort(); };
+    return () => {
+      disposed = true;
+      request.abort();
+    };
   }, [base, requested, key, retry]);
 
-  const selected = list.key === key ? list.classroom?.classNumber ?? null : null;
+  const selected =
+    list.key === key ? (list.classroom?.classNumber ?? null) : null;
   useEffect(() => {
     let disposed = false;
     let nextPoll: ReturnType<typeof setTimeout> | undefined;
     let controller: AbortController | undefined;
-    setView({key, snapshot: null, error: null});
+    setView({ key, snapshot: null, error: null });
     if (selected === null) return;
-    const interval = Number.isFinite(refreshIntervalMs) ? Math.max(1000, refreshIntervalMs) : REFRESH_INTERVAL_MS;
+    const interval = Number.isFinite(refreshIntervalMs)
+      ? Math.max(1000, refreshIntervalMs)
+      : REFRESH_INTERVAL_MS;
     const refresh = async () => {
       const request = new AbortController();
       controller = request;
       activeRequest.current = request;
       try {
         const snapshot = await fetchDashboard(base, selected, request.signal);
-        if (!disposed && !request.signal.aborted) setView({key, snapshot, error: null});
+        if (!disposed && !request.signal.aborted)
+          setView({ key, snapshot, error: null });
       } catch (error) {
-        if (!disposed && !request.signal.aborted) setView({key, snapshot: null, error: getRequestError(error)});
+        if (!disposed && !request.signal.aborted)
+          setView({ key, snapshot: null, error: getRequestError(error) });
       } finally {
         if (activeRequest.current === request) activeRequest.current = null;
-        if (!disposed && !request.signal.aborted) nextPoll = setTimeout(refresh, interval);
+        if (!disposed && !request.signal.aborted)
+          nextPoll = setTimeout(refresh, interval);
       }
     };
     void refresh();
-    return () => { disposed = true; clearTimeout(nextPoll); controller?.abort(); };
+    return () => {
+      disposed = true;
+      clearTimeout(nextPoll);
+      controller?.abort();
+    };
   }, [base, selected, refreshIntervalMs, key]);
 
   const snapshot = view.key === key && selected !== null ? view.snapshot : null;
   const loaded = list.key === key && list.loaded;
-  const classroom = list.key === key ? list.classroom?.className ?? "" : "";
-  const error = list.key === key && list.error
-    ? `API 오류: ${list.error}`
-    : list.key === key && list.missing
-      ? `등록되지 않은 반입니다. (반 번호: ${requested})`
-      : view.key === key && view.error ? `API 오류: ${view.error}` : null;
+  const classroom = list.key === key ? (list.classroom?.className ?? "") : "";
+  const error =
+    list.key === key && list.error
+      ? `API 오류: ${list.error}`
+      : list.key === key && list.missing
+        ? `등록되지 않은 반입니다. (반 번호: ${requested})`
+        : view.key === key && view.error
+          ? `API 오류: ${view.error}`
+          : null;
   const period = snapshot?.period;
   const currentPeriod = period
     ? {
