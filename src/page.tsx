@@ -229,58 +229,53 @@ const Page = ({
     : null;
 
   return (
-    <main
-      className="min-h-screen bg-[#f4f7fb] text-sm text-[#263348]"
-      style={{
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
-      }}
-    >
-      <Header
-        classroom={classroom}
-        stats={stats}
-        currentPeriod={currentPeriod}
-      />
-      <section className="flex min-h-[calc(100vh-110px)] flex-col px-9 pb-6 pt-7 max-[760px]:px-4 max-[760px]:pt-6">
-        <div className="flex h-[34px] items-start justify-between text-[25px] font-bold text-[#344158]">
-          <span>교시별 이동 학생</span>
-        </div>
-        {route.kind !== "class" ? (
-          <p role="status" className="mt-4 text-[#7d899b]">
-            {route.kind === "home"
-              ? "반별 전용 주소로 접속해주세요. 예: /class/12"
-              : "잘못된 주소입니다. /class/12 형식의 반별 전용 주소로 접속해주세요."}
-          </p>
-        ) : error ? (
-          <div
-            role="alert"
-            className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700"
-          >
-            <p>{error}</p>
-            {list.error || list.missing ? (
-              <button
-                type="button"
-                className="mt-3 rounded border border-red-200 bg-white px-3 py-2"
-                onClick={() => setRetry((value) => value + 1)}
-              >
-                다시 시도
-              </button>
-            ) : (
-              <p className="mt-2">연결이 복구되면 자동으로 갱신됩니다.</p>
-            )}
-          </div>
-        ) : !loaded ? (
-          <p role="status" className="mt-4 text-[#7d899b]">
-            등록된 반을 불러오는 중입니다.
-          </p>
-        ) : snapshot ? (
-          <Dashboard periods={buildPeriods(snapshot)} />
-        ) : (
-          <p role="status" className="mt-4 text-[#7d899b]">
-            현황을 불러오는 중입니다.
-          </p>
-        )}
-      </section>
+    <main className="app-shell">
+      <div className="page-container">
+        <Header
+          classroom={classroom}
+          stats={stats}
+          currentPeriod={currentPeriod}
+        />
+
+        <section className="content-section">
+          <h2 className="section-title">교시별 이동 학생</h2>
+
+          {route.kind !== "class" ? (
+            <p role="status" className="notice-message">
+              {route.kind === "home"
+                ? "반별 전용 주소로 접속해주세요. 예: /class/12"
+                : "잘못된 주소입니다. /class/12 형식의 반별 전용 주소로 접속해주세요."}
+            </p>
+          ) : error ? (
+            <div role="alert" className="error-message">
+              <p>{error}</p>
+              {list.error || list.missing ? (
+                <button
+                  type="button"
+                  className="retry-button"
+                  onClick={() => setRetry((value) => value + 1)}
+                >
+                  다시 시도
+                </button>
+              ) : (
+                <p className="error-help">
+                  연결이 복구되면 자동으로 갱신됩니다.
+                </p>
+              )}
+            </div>
+          ) : !loaded ? (
+            <p role="status" className="notice-message">
+              등록된 반을 불러오는 중입니다.
+            </p>
+          ) : snapshot ? (
+            <Dashboard periods={buildPeriods(snapshot)} />
+          ) : (
+            <p role="status" className="notice-message">
+              현황을 불러오는 중입니다.
+            </p>
+          )}
+        </section>
+      </div>
     </main>
   );
 };
