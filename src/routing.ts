@@ -1,12 +1,21 @@
-export type ClassRoute = {kind: "home"} | {kind: "invalid"} | {kind: "class"; classNumber: number};
+export type ClassRoute =
+  | { kind: "home" }
+  | { kind: "invalid" }
+  | { kind: "class"; classNumber: number };
 
 export const parseClassRoute = (pathname: string): ClassRoute => {
-  if (pathname === "/") return {kind: "home"};
+  if (pathname === "/") return { kind: "home" };
   const match = /^\/class\/([1-9]\d*)\/?$/.exec(pathname);
-  if (!match) return {kind: "invalid"};
+  if (!match) return { kind: "invalid" };
   const classNumber = Number(match[1]);
-  return Number.isSafeInteger(classNumber) ? {kind: "class", classNumber} : {kind: "invalid"};
+  return Number.isSafeInteger(classNumber)
+    ? { kind: "class", classNumber }
+    : { kind: "invalid" };
 };
+
+// 관리자 페이지 주소(/admin)인지 확인합니다.
+export const isAdminPath = (pathname: string): boolean =>
+  /^\/admin\/?$/.test(pathname);
 
 export const currentPath = (): string => window.location.pathname;
 
@@ -14,14 +23,21 @@ export const currentPath = (): string => window.location.pathname;
 export const subscribeToPath = (notify: () => void): (() => void) => {
   const push = window.history.pushState;
   const replace = window.history.replaceState;
-  const onPush: History["pushState"] = function (...args) { push.apply(window.history, args); notify(); };
-  const onReplace: History["replaceState"] = function (...args) { replace.apply(window.history, args); notify(); };
+  const onPush: History["pushState"] = function (...args) {
+    push.apply(window.history, args);
+    notify();
+  };
+  const onReplace: History["replaceState"] = function (...args) {
+    replace.apply(window.history, args);
+    notify();
+  };
   window.history.pushState = onPush;
   window.history.replaceState = onReplace;
   window.addEventListener("popstate", notify);
   return () => {
     window.removeEventListener("popstate", notify);
     if (window.history.pushState === onPush) window.history.pushState = push;
-    if (window.history.replaceState === onReplace) window.history.replaceState = replace;
+    if (window.history.replaceState === onReplace)
+      window.history.replaceState = replace;
   };
 };
